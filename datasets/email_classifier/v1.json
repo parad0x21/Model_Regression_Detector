@@ -1,0 +1,385 @@
+{
+  "version": "v1",
+  "created_at": "2026-05-29",
+  "description": "Human-authored golden set for customer support email classification. 54 cases spanning all four categories with deliberate edge cases: ambiguous intent, typos, very short messages, mixed-language text, and sarcasm.",
+  "cases": [
+    {
+      "id": "ec-001",
+      "input": { "email_text": "Hi, I was charged $49 twice this month for the same subscription. Can you refund the duplicate charge?" },
+      "expected_output": { "category": "billing", "summary": "Customer was charged twice for their subscription and wants the duplicate refunded." },
+      "expected_difficulty": "easy",
+      "notes": "Clear duplicate-charge billing case."
+    },
+    {
+      "id": "ec-002",
+      "input": { "email_text": "Could you please send me a copy of my invoice for April? I need it for expense reporting." },
+      "expected_output": { "category": "billing", "summary": "Customer is requesting a copy of their April invoice." },
+      "expected_difficulty": "easy",
+      "notes": "Invoice request."
+    },
+    {
+      "id": "ec-003",
+      "input": { "email_text": "My card was declined when you tried to renew my plan. How do I update my payment method?" },
+      "expected_output": { "category": "billing", "summary": "Customer's renewal payment was declined and they want to update their payment method." },
+      "expected_difficulty": "easy",
+      "notes": "Payment failure / payment method update."
+    },
+    {
+      "id": "ec-004",
+      "input": { "email_text": "Why did my monthly price jump from $20 to $35 without any notice? That seems unfair." },
+      "expected_output": { "category": "billing", "summary": "Customer is upset about an unannounced price increase on their monthly plan." },
+      "expected_difficulty": "medium",
+      "notes": "Pricing complaint."
+    },
+    {
+      "id": "ec-005",
+      "input": { "email_text": "I applied the promo code WELCOME20 at checkout but the discount was not applied to my order." },
+      "expected_output": { "category": "billing", "summary": "A promo code did not apply the expected discount at checkout." },
+      "expected_difficulty": "easy",
+      "notes": "Coupon not applied."
+    },
+    {
+      "id": "ec-006",
+      "input": { "email_text": "Do you provide a proper VAT invoice with your company tax ID for EU customers?" },
+      "expected_output": { "category": "billing", "summary": "Customer asks whether a VAT invoice with a tax ID is available for EU customers." },
+      "expected_difficulty": "medium",
+      "notes": "Tax/VAT invoice question."
+    },
+    {
+      "id": "ec-007",
+      "input": { "email_text": "Refund?" },
+      "expected_output": { "category": "billing", "summary": "Customer is asking about a refund with no further detail." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: extremely short message; intent inferred as billing/refund."
+    },
+    {
+      "id": "ec-008",
+      "input": { "email_text": "i think i was billd twice for my subscripton this monthh, can u check my acount charges plz" },
+      "expected_output": { "category": "billing", "summary": "Customer believes they were billed twice this month and wants their charges checked." },
+      "expected_difficulty": "medium",
+      "notes": "Edge: typos. Mentions 'account' but the intent is about charges (billing)."
+    },
+    {
+      "id": "ec-009",
+      "input": { "email_text": "Hola, me cobraron dos veces this month and I only have one subscription. Please help." },
+      "expected_output": { "category": "billing", "summary": "Customer reports being charged twice despite having a single subscription." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: mixed Spanish/English. Double-charge billing issue."
+    },
+    {
+      "id": "ec-010",
+      "input": { "email_text": "Wonderful. Charged $99 for a plan I cancelled last week. Truly a flawless system you have here." },
+      "expected_output": { "category": "billing", "summary": "Customer was charged for a plan they had already cancelled and wants it resolved." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: sarcastic tone. Underlying issue is an erroneous charge (billing)."
+    },
+    {
+      "id": "ec-011",
+      "input": { "email_text": "Can I switch from monthly to annual billing, and would I get the annual discount immediately?" },
+      "expected_output": { "category": "billing", "summary": "Customer wants to switch to annual billing and asks about the annual discount." },
+      "expected_difficulty": "medium",
+      "notes": "Billing cycle change."
+    },
+    {
+      "id": "ec-012",
+      "input": { "email_text": "I see a pending charge of $1 on my statement from your company. What is that for?" },
+      "expected_output": { "category": "billing", "summary": "Customer is asking about a $1 pending charge from the company." },
+      "expected_difficulty": "easy",
+      "notes": "Card verification charge inquiry."
+    },
+    {
+      "id": "ec-013",
+      "input": { "email_text": "Please stop charging me. I want a full refund for the last three months immediately." },
+      "expected_output": { "category": "billing", "summary": "Customer demands billing stop and a full refund for the last three months." },
+      "expected_difficulty": "medium",
+      "notes": "Refund demand; primary intent is monetary (billing) even though it implies cancellation."
+    },
+    {
+      "id": "ec-014",
+      "input": { "email_text": "Every time I try to export a report to PDF the app freezes and then closes. I'm on the latest version on Windows 11." },
+      "expected_output": { "category": "technical", "summary": "The app crashes when the customer exports a report to PDF on Windows 11." },
+      "expected_difficulty": "easy",
+      "notes": "Crash on export."
+    },
+    {
+      "id": "ec-015",
+      "input": { "email_text": "Your status page says everything is fine but I'm getting a 500 error on every page load right now." },
+      "expected_output": { "category": "technical", "summary": "Customer is hitting persistent 500 errors despite the status page showing no issues." },
+      "expected_difficulty": "medium",
+      "notes": "Server error / possible outage."
+    },
+    {
+      "id": "ec-016",
+      "input": { "email_text": "Our integration suddenly started returning 401 Unauthorized even though the API key hasn't changed." },
+      "expected_output": { "category": "technical", "summary": "An API integration is returning 401 errors despite an unchanged API key." },
+      "expected_difficulty": "medium",
+      "notes": "API auth error; technical despite mentioning a key (not account login)."
+    },
+    {
+      "id": "ec-017",
+      "input": { "email_text": "The dashboard takes almost 30 seconds to load lately. It used to be instant. Is something wrong?" },
+      "expected_output": { "category": "technical", "summary": "Customer reports the dashboard has become very slow to load." },
+      "expected_difficulty": "easy",
+      "notes": "Performance degradation."
+    },
+    {
+      "id": "ec-018",
+      "input": { "email_text": "How do I connect the Slack integration? I can't find where to add the webhook in settings." },
+      "expected_output": { "category": "technical", "summary": "Customer needs help connecting the Slack integration and finding the webhook setting." },
+      "expected_difficulty": "easy",
+      "notes": "How-to / configuration question."
+    },
+    {
+      "id": "ec-019",
+      "input": { "email_text": "the app keps freezng when i clic the export buton on my mac, plz fix asap" },
+      "expected_output": { "category": "technical", "summary": "The app keeps freezing when the customer clicks the export button on macOS." },
+      "expected_difficulty": "medium",
+      "notes": "Edge: typos. Clear technical freeze bug."
+    },
+    {
+      "id": "ec-020",
+      "input": { "email_text": "It's broken." },
+      "expected_output": { "category": "technical", "summary": "Customer reports that something is broken without specifics." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: extremely short and vague; defaulting to technical as a malfunction report."
+    },
+    {
+      "id": "ec-021",
+      "input": { "email_text": "Bonjour, the export feature ne fonctionne pas since the last update, it just shows a blank screen." },
+      "expected_output": { "category": "technical", "summary": "The export feature stopped working after the last update and shows a blank screen." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: mixed French/English. Technical regression after update."
+    },
+    {
+      "id": "ec-022",
+      "input": { "email_text": "Amazing, your 'new' update deleted all of my saved reports. Brilliant engineering, really." },
+      "expected_output": { "category": "technical", "summary": "An update appears to have deleted the customer's saved reports." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: sarcastic. Underlying technical data-loss bug."
+    },
+    {
+      "id": "ec-023",
+      "input": { "email_text": "My webhook endpoint isn't receiving any events even though I enabled them an hour ago." },
+      "expected_output": { "category": "technical", "summary": "Configured webhooks are not delivering any events to the customer's endpoint." },
+      "expected_difficulty": "medium",
+      "notes": "Webhook delivery issue."
+    },
+    {
+      "id": "ec-024",
+      "input": { "email_text": "After the latest release my charts stopped rendering and the console shows a JavaScript error." },
+      "expected_output": { "category": "technical", "summary": "Charts stopped rendering after the latest release, with a JavaScript console error." },
+      "expected_difficulty": "medium",
+      "notes": "Front-end rendering bug."
+    },
+    {
+      "id": "ec-025",
+      "input": { "email_text": "Is there a way to bulk import contacts from a CSV file? I have about 5000 rows." },
+      "expected_output": { "category": "technical", "summary": "Customer asks how to bulk import around 5000 contacts from a CSV file." },
+      "expected_difficulty": "easy",
+      "notes": "How-to / usage question."
+    },
+    {
+      "id": "ec-026",
+      "input": { "email_text": "The mobile app won't sync with my desktop data. I tap refresh but nothing updates." },
+      "expected_output": { "category": "technical", "summary": "The mobile app is not syncing with the customer's desktop data." },
+      "expected_difficulty": "medium",
+      "notes": "Sync failure."
+    },
+    {
+      "id": "ec-027",
+      "input": { "email_text": "I reset my password an hour ago but now I get 'invalid credentials' on every login attempt." },
+      "expected_output": { "category": "account", "summary": "Customer cannot log in after resetting their password and gets an invalid-credentials error." },
+      "expected_difficulty": "easy",
+      "notes": "Login failure after reset."
+    },
+    {
+      "id": "ec-028",
+      "input": { "email_text": "I forgot my password and the reset email never arrives. I've checked spam too." },
+      "expected_output": { "category": "account", "summary": "Customer is not receiving the password reset email and cannot regain access." },
+      "expected_difficulty": "easy",
+      "notes": "Password reset email not arriving."
+    },
+    {
+      "id": "ec-029",
+      "input": { "email_text": "My two-factor authentication codes are all being rejected even though my phone clock is correct." },
+      "expected_output": { "category": "account", "summary": "The customer's 2FA codes are being rejected during login." },
+      "expected_difficulty": "medium",
+      "notes": "2FA access issue."
+    },
+    {
+      "id": "ec-030",
+      "input": { "email_text": "I'd like to change the email address associated with my account to a new work email." },
+      "expected_output": { "category": "account", "summary": "Customer wants to change the email address on their account." },
+      "expected_difficulty": "easy",
+      "notes": "Profile change."
+    },
+    {
+      "id": "ec-031",
+      "input": { "email_text": "Please delete my account and erase all of my personal data in accordance with GDPR." },
+      "expected_output": { "category": "account", "summary": "Customer requests account deletion and erasure of personal data under GDPR." },
+      "expected_difficulty": "medium",
+      "notes": "Account closure / data deletion."
+    },
+    {
+      "id": "ec-032",
+      "input": { "email_text": "My account got locked after a few wrong password attempts. How can I unlock it?" },
+      "expected_output": { "category": "account", "summary": "Customer's account is locked after failed login attempts and they want it unlocked." },
+      "expected_difficulty": "medium",
+      "notes": "Account lockout."
+    },
+    {
+      "id": "ec-033",
+      "input": { "email_text": "I noticed a login from a country I've never visited. Can you check if my account was compromised?" },
+      "expected_output": { "category": "account", "summary": "Customer suspects unauthorized access and wants their account security checked." },
+      "expected_difficulty": "medium",
+      "notes": "Security / suspicious login."
+    },
+    {
+      "id": "ec-034",
+      "input": { "email_text": "How do I add a teammate to my account and give them edit access to our projects?" },
+      "expected_output": { "category": "account", "summary": "Customer wants to add a teammate and grant them edit access." },
+      "expected_difficulty": "medium",
+      "notes": "Access / team management."
+    },
+    {
+      "id": "ec-035",
+      "input": { "email_text": "cant acces my acount, the password dont work anymore and i didnt change it" },
+      "expected_output": { "category": "account", "summary": "Customer cannot access their account because their password no longer works." },
+      "expected_difficulty": "medium",
+      "notes": "Edge: typos. Access/login problem."
+    },
+    {
+      "id": "ec-036",
+      "input": { "email_text": "Locked out." },
+      "expected_output": { "category": "account", "summary": "Customer reports being locked out of their account." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: extremely short; account lockout inferred."
+    },
+    {
+      "id": "ec-037",
+      "input": { "email_text": "No puedo iniciar sesion, my password reset link says it has already expired." },
+      "expected_output": { "category": "account", "summary": "Customer cannot sign in because their password reset link has expired." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: mixed Spanish/English. Account access issue."
+    },
+    {
+      "id": "ec-038",
+      "input": { "email_text": "Love being locked out of my own account for absolutely no reason. Fantastic security, thanks." },
+      "expected_output": { "category": "account", "summary": "Customer is locked out of their account and wants access restored." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: sarcastic. Account lockout underneath."
+    },
+    {
+      "id": "ec-039",
+      "input": { "email_text": "Can I transfer ownership of the workspace to another admin before I leave the company?" },
+      "expected_output": { "category": "account", "summary": "Customer wants to transfer workspace ownership to another admin." },
+      "expected_difficulty": "medium",
+      "notes": "Ownership transfer / access."
+    },
+    {
+      "id": "ec-040",
+      "input": { "email_text": "Hey team, love the product! Do you happen to offer a partner program for agencies?" },
+      "expected_output": { "category": "general", "summary": "Customer asks whether a partner program for agencies is available." },
+      "expected_difficulty": "easy",
+      "notes": "Partnership inquiry."
+    },
+    {
+      "id": "ec-041",
+      "input": { "email_text": "Just wanted to say your support team helped me last week and they were fantastic. Thank you!" },
+      "expected_output": { "category": "general", "summary": "Customer is sharing positive feedback about the support team." },
+      "expected_difficulty": "easy",
+      "notes": "Positive feedback."
+    },
+    {
+      "id": "ec-042",
+      "input": { "email_text": "I'm a journalist writing about productivity tools. Could someone from your team do a short interview?" },
+      "expected_output": { "category": "general", "summary": "A journalist is requesting an interview for an article." },
+      "expected_difficulty": "medium",
+      "notes": "Press / media inquiry."
+    },
+    {
+      "id": "ec-043",
+      "input": { "email_text": "Do you have any open positions on your engineering team? I couldn't find a careers page." },
+      "expected_output": { "category": "general", "summary": "Customer is asking about open engineering job positions." },
+      "expected_difficulty": "easy",
+      "notes": "Careers question."
+    },
+    {
+      "id": "ec-044",
+      "input": { "email_text": "Quick question." },
+      "expected_output": { "category": "general", "summary": "Customer sent a vague message with no actual question or detail." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: extremely short and contentless; defaults to general."
+    },
+    {
+      "id": "ec-045",
+      "input": { "email_text": "do u gys have a referal programm? a freind told me i could get credit for invitng peple" },
+      "expected_output": { "category": "general", "summary": "Customer is asking whether a referral program exists." },
+      "expected_difficulty": "medium",
+      "notes": "Edge: typos. General referral-program inquiry."
+    },
+    {
+      "id": "ec-046",
+      "input": { "email_text": "hi" },
+      "expected_output": { "category": "general", "summary": "Customer sent a greeting with no request or content." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: minimal content; general."
+    },
+    {
+      "id": "ec-047",
+      "input": { "email_text": "Ciao! Just wanted to say grazie mille, your team was super helpful and the app is great." },
+      "expected_output": { "category": "general", "summary": "Customer is expressing thanks and positive feedback about the team and app." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: mixed Italian/English. Positive feedback."
+    },
+    {
+      "id": "ec-048",
+      "input": { "email_text": "Oh sure, like anyone there actually reads feedback. Anyway, the app is fine I guess. Bye." },
+      "expected_output": { "category": "general", "summary": "Customer is leaving lukewarm, sarcastic feedback about the product." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: sarcastic. General feedback with no actionable request."
+    },
+    {
+      "id": "ec-049",
+      "input": { "email_text": "You should really add a dark mode. My eyes would thank you during late-night sessions." },
+      "expected_output": { "category": "general", "summary": "Customer is suggesting a dark mode feature." },
+      "expected_difficulty": "medium",
+      "notes": "Feature suggestion; general feedback rather than a technical fault."
+    },
+    {
+      "id": "ec-050",
+      "input": { "email_text": "Are you running any webinars or live demos this month? I'd like to attend one with my team." },
+      "expected_output": { "category": "general", "summary": "Customer asks whether webinars or live demos are scheduled this month." },
+      "expected_difficulty": "easy",
+      "notes": "Event / webinar question."
+    },
+    {
+      "id": "ec-051",
+      "input": { "email_text": "I paid for the Premium plan yesterday but the premium features still don't show up in my account." },
+      "expected_output": { "category": "technical", "summary": "Customer paid for Premium but the premium features are not appearing in their account." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: ambiguous between billing (paid) and technical (entitlement not applied). Payment succeeded, so primary issue is features not unlocking = technical."
+    },
+    {
+      "id": "ec-052",
+      "input": { "email_text": "Please cancel my subscription effective today; I no longer need the service." },
+      "expected_output": { "category": "account", "summary": "Customer wants to cancel their subscription effective immediately." },
+      "expected_difficulty": "medium",
+      "notes": "Edge: cancellation. Per category rules, plan cancellation/closure is treated as account."
+    },
+    {
+      "id": "ec-053",
+      "input": { "email_text": "Is the Pro plan worth it over the Basic plan? Mainly curious about the difference in features." },
+      "expected_output": { "category": "general", "summary": "Customer is asking how the Pro plan compares to the Basic plan." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: ambiguous between billing (plans/pricing) and general (pre-sales question). It is an exploratory comparison, not a charge issue, so general."
+    },
+    {
+      "id": "ec-054",
+      "input": { "email_text": "The invoice download button gives me a 404 error, so now I can't get the receipt I need." },
+      "expected_output": { "category": "technical", "summary": "The invoice download button returns a 404 error, preventing the customer from getting their receipt." },
+      "expected_difficulty": "hard",
+      "notes": "Edge: ambiguous between billing (invoice/receipt) and technical (404 error). The blocker is a broken button, so the primary issue is technical."
+    }
+  ]
+}
