@@ -179,6 +179,13 @@ class RunRepository:
         ).fetchall()
         return [RunRecord.model_validate(dict(r)) for r in rows]
 
+    def features(self) -> list[str]:
+        """Return the distinct feature names that have at least one run."""
+        rows = self._conn.execute(
+            "SELECT DISTINCT feature_name FROM runs ORDER BY feature_name"
+        ).fetchall()
+        return [r["feature_name"] for r in rows]
+
 
 class TestResultRepository:
     """Access to the ``test_results`` table."""

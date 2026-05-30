@@ -22,9 +22,11 @@ _IN_MEMORY = ":memory:"
 class Database:
     """A thin, owning wrapper around one SQLite connection."""
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, check_same_thread: bool = True) -> None:
         self._path = str(path)
-        self._conn = sqlite3.connect(self._path)
+        # check_same_thread=False is needed for the Streamlit dashboard, whose reruns
+        # may touch the connection from different threads (read-only there).
+        self._conn = sqlite3.connect(self._path, check_same_thread=check_same_thread)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys = ON")
         if self._path != _IN_MEMORY:
@@ -56,12 +58,13 @@ class Database:
         self._conn.close()
 
 
-def open_database(path: str | Path | None = None) -> Database:
+def open_database(path: str | Path | None = None, *, check_same_thread: bool = True) -> Database:
     """Open (and bootstrap) the database.
 
     Args:
         path: Database path; defaults to ``settings.database_path``. Use
             ``":memory:"`` for an ephemeral database (tests).
+        check_same_thread: Pass ``False`` for the Streamlit dashboard (read-only).
     """
     if path is None:
         from mrds.config.settings import get_settings
@@ -72,7 +75,7 @@ def open_database(path: str | Path | None = None) -> Database:
     if path_str != _IN_MEMORY:
         Path(path_str).parent.mkdir(parents=True, exist_ok=True)
 
-    db = Database(path_str)
+    db = Database(path_str, check_same_thread=check_same_thread)
     db.bootstrap()
     logger.info("Opened database at %s", path_str)
     return db
