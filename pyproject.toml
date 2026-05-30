@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mrds"
+version = "0.1.0"
+description = "Model Regression Detection System — an AI evaluation platform and deployment-safety system."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "rajverma" }]
+keywords = ["llm", "evaluation", "regression", "ci", "ml-infrastructure"]
+
+# Foundation dependencies only. Feature-specific deps (openai, jinja2, streamlit,
+# deepeval, ragas, ...) are introduced in the sprints that need them.
+dependencies = [
+    "pydantic>=2.6",
+    "pydantic-settings[yaml]>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+# CLI-first: the same entrypoint is used locally and in CI.
+mrds = "mrds.cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mrds"]
+
+# ---------------------------------------------------------------------------
+# Ruff (lint + format)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "N",   # pep8-naming
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802", "N803"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]

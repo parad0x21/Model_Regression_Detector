@@ -1,0 +1,16 @@
+# MRDS non-secret configuration defaults.
+#
+# These values are committed and form the middle layer of configuration:
+#   defaults (in code) < this file < environment variables / .env
+#
+# Secrets (OPENAI_API_KEY, SLACK_WEBHOOK_URL) are NEVER stored here — they come
+# from the environment only. See .env.example.
+
+env: local
+log_level: INFO
+json_logs: false
+
+database_path: data/eval.db
+
+model: gpt-4o-mini
+judge_enabled: false
