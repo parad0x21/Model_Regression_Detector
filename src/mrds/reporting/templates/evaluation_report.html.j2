@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ ctx.title }}</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; color: #1a1a1a; }
+    h1 { margin-bottom: 0.2rem; }
+    .muted { color: #666; font-size: 0.9rem; }
+    table { border-collapse: collapse; margin: 0.5rem 0 1.5rem; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; font-size: 0.9rem; }
+    th { background: #f5f5f5; }
+    code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; }
+    .ok { color: #1a7f37; } .bad { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>{{ ctx.title }}</h1>
+  <p class="muted">Generated {{ ctx.generated_at.strftime("%Y-%m-%d %H:%M:%SZ") }}</p>
+
+  <h2>Run metadata</h2>
+  <table>
+    <tr><th>Feature</th><td>{{ ctx.feature }}</td><th>Run ID</th><td><code>{{ ctx.run_id }}</code></td></tr>
+    <tr><th>Model</th><td>{{ ctx.model }}</td><th>Duration</th><td>{{ "%.2f"|format(ctx.duration_seconds) }}s</td></tr>
+    <tr><th>Prompt</th><td>{{ ctx.prompt_version }} (<code>{{ ctx.prompt_hash[:12] }}</code>)</td>
+        <th>Dataset</th><td>{{ ctx.dataset_version }} (<code>{{ ctx.dataset_hash[:12] }}</code>)</td></tr>
+    <tr><th>Started</th><td>{{ ctx.start_time.strftime("%Y-%m-%d %H:%M:%SZ") }}</td>
+        <th>Ended</th><td>{{ ctx.end_time.strftime("%Y-%m-%d %H:%M:%SZ") }}</td></tr>
+  </table>
+
+  <h2>Aggregate metrics</h2>
+  <table>
+    <tr><th>Total cases</th><th>Passed</th><th>Failed</th><th>Errored</th><th>Pass rate</th></tr>
+    <tr><td>{{ ctx.total_cases }}</td><td>{{ ctx.passed }}</td><td>{{ ctx.failed }}</td>
+        <td>{{ ctx.errored }}</td><td>{{ "%.1f"|format(ctx.pass_rate * 100) }}%</td></tr>
+  </table>
+
+  <h2>Scorer metrics</h2>
+  <table>
+    <tr><th>Scorer</th><th>Mean score</th><th>Pass rate</th><th>Passed</th><th>Count</th></tr>
+    {% for s in ctx.scorers %}
+    <tr><td>{{ s.name }}</td><td>{{ "%.3f"|format(s.mean_score) }}</td>
+        <td>{{ "%.1f"|format(s.pass_rate * 100) }}%</td><td>{{ s.passed }}</td><td>{{ s.count }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Segment metrics{% if ctx.segment_field %} (by {{ ctx.segment_field }}){% endif %}</h2>
+  {% if ctx.segments %}
+  <table>
+    <tr><th>Segment</th><th>Count</th><th>Pass rate</th><th>Scorer means</th></tr>
+    {% for seg in ctx.segments %}
+    <tr><td>{{ seg.segment }}</td><td>{{ seg.count }}</td><td>{{ "%.1f"|format(seg.pass_rate * 100) }}%</td>
+        <td>{% for k, v in seg.scorer_means.items() %}{{ k }}={{ "%.3f"|format(v) }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No segmentation configured.</p>
+  {% endif %}
+
+  <h2>Token usage</h2>
+  <table>
+    <tr><th>Total</th><th>Input</th><th>Output</th><th>Mean / case</th></tr>
+    <tr><td>{{ ctx.tokens.total_tokens }}</td><td>{{ ctx.tokens.total_input_tokens }}</td>
+        <td>{{ ctx.tokens.total_output_tokens }}</td><td>{{ "%.1f"|format(ctx.tokens.mean_tokens_per_case) }}</td></tr>
+  </table>
+
+  <h2>Latency statistics (ms)</h2>
+  <table>
+    <tr><th>Mean</th><th>Min</th><th>p50</th><th>p95</th><th>Max</th></tr>
+    <tr><td>{{ "%.1f"|format(ctx.latency.mean_ms) }}</td><td>{{ "%.1f"|format(ctx.latency.min_ms) }}</td>
+        <td>{{ "%.1f"|format(ctx.latency.p50_ms) }}</td><td>{{ "%.1f"|format(ctx.latency.p95_ms) }}</td>
+        <td>{{ "%.1f"|format(ctx.latency.max_ms) }}</td></tr>
+  </table>
+
+  <h2>Per-case summary</h2>
+  <table>
+    <tr><th>Case</th><th>Difficulty</th><th>Result</th><th>Latency (ms)</th><th>Tokens</th><th>Scores</th></tr>
+    {% for c in ctx.cases %}
+    <tr>
+      <td><code>{{ c.case_id }}</code></td>
+      <td>{{ c.expected_difficulty.value }}</td>
+      <td>{% if c.error %}<span class="bad">ERROR</span>{% elif c.passed %}<span class="ok">pass</span>{% else %}<span class="bad">fail</span>{% endif %}</td>
+      <td>{{ "%.1f"|format(c.latency_ms) }}</td>
+      <td>{{ c.total_tokens }}</td>
+      <td>{% for s in c.scores %}{{ s.name }}:{% if s.passed %}✓{% else %}✗{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% if c.error %}{{ c.error }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

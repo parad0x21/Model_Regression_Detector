@@ -1,0 +1,26 @@
+# {{ ctx.title }}
+
+_Generated {{ ctx.generated_at.strftime("%Y-%m-%d %H:%M:%SZ") }}_
+
+**Feature:** {{ ctx.feature }} &nbsp;|&nbsp; **Run:** `{{ ctx.run_id }}` &nbsp;|&nbsp; **Model:** {{ ctx.model }}
+**Prompt:** {{ ctx.prompt_version }} (`{{ ctx.prompt_hash[:12] }}`) &nbsp;|&nbsp; **Dataset:** {{ ctx.dataset_version }} (`{{ ctx.dataset_hash[:12] }}`)
+
+## Aggregate
+- **Cases:** {{ ctx.total_cases }} (passed {{ ctx.passed }}, failed {{ ctx.failed }}, errored {{ ctx.errored }})
+- **Pass rate:** {{ "%.1f"|format(ctx.pass_rate * 100) }}%
+- **Latency:** mean {{ "%.1f"|format(ctx.latency.mean_ms) }} ms, p95 {{ "%.1f"|format(ctx.latency.p95_ms) }} ms
+- **Tokens:** {{ ctx.tokens.total_tokens }} total ({{ "%.1f"|format(ctx.tokens.mean_tokens_per_case) }} / case)
+
+## Scorers
+| Scorer | Mean | Pass rate |
+| --- | --- | --- |
+{% for s in ctx.scorers %}| {{ s.name }} | {{ "%.3f"|format(s.mean_score) }} | {{ "%.1f"|format(s.pass_rate * 100) }}% |
+{% endfor %}
+{% if ctx.segments %}
+
+## Segments (by {{ ctx.segment_field }})
+| Segment | Count | Pass rate | Scorer means |
+| --- | --- | --- | --- |
+{% for seg in ctx.segments %}| {{ seg.segment }} | {{ seg.count }} | {{ "%.1f"|format(seg.pass_rate * 100) }}% | {% for k, v in seg.scorer_means.items() %}{{ k }}={{ "%.3f"|format(v) }}{% if not loop.last %}, {% endif %}{% endfor %} |
+{% endfor %}
+{% endif %}

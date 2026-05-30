@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from mrds.config.settings import Settings, get_settings
 from mrds.core.errors import FeatureExecutionError
-from mrds.core.interfaces import Feature, Scorer
+from mrds.core.interfaces import Feature, FeatureRunResult, Scorer
 from mrds.features.email_classifier.schema import (
     EmailClassificationInput,
     EmailClassificationOutput,
@@ -31,7 +31,7 @@ from mrds.features.email_classifier.scorers import (
     CategoryMatchScorer,
     SummaryQualityScorer,
 )
-from mrds.llm.base import LLMMessage, StructuredLLMClient
+from mrds.llm.base import LLMMessage, LLMResult, StructuredLLMClient
 from mrds.llm.errors import LLMConfigurationError, LLMError
 from mrds.observability.logging import get_logger
 from mrds.prompts.loader import DEFAULT_PROMPTS_DIR
@@ -80,6 +80,22 @@ class EmailClassifierFeature(Feature):
 
     def run(self, payload: BaseModel | Mapping[str, Any]) -> EmailClassificationOutput:
         """Classify a single email into a validated :class:`EmailClassificationOutput`."""
+        return self._classify(payload).parsed
+
+    def run_with_usage(self, payload: BaseModel | Mapping[str, Any]) -> FeatureRunResult:
+        """Classify a single email and report token usage."""
+        result = self._classify(payload)
+        return FeatureRunResult(
+            output=result.parsed,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            total_tokens=result.total_tokens,
+        )
+
+    def _classify(
+        self, payload: BaseModel | Mapping[str, Any]
+    ) -> LLMResult[EmailClassificationOutput]:
+        """Resolve prompt/client, call the model, and return the full LLM result."""
         data = self._coerce_input(payload)
         prompt = self._resolve_prompt()
         messages = self._build_messages(prompt, data)
@@ -102,7 +118,7 @@ class EmailClassifierFeature(Feature):
             prompt.identity,
             result.total_tokens,
         )
-        return result.parsed
+        return result
 
     # -- helpers ----------------------------------------------------------------
 

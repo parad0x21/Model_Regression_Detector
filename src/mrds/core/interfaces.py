@@ -9,6 +9,7 @@ implementing :class:`Feature` and registering it — no core changes.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import ClassVar, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,6 +24,20 @@ class ScoreResult(BaseModel):
     score: float = Field(ge=0.0, le=1.0, description="Normalised score in [0, 1].")
     passed: bool = Field(description="Whether this scorer considers the output acceptable.")
     detail: str = Field(default="", description="Optional human-readable explanation.")
+
+
+@dataclass(frozen=True)
+class FeatureRunResult:
+    """A feature's structured output for one input, plus optional token usage.
+
+    Token usage lets the evaluation engine aggregate cost-related metrics without
+    coupling to any provider. Features that cannot report usage leave it at zero.
+    """
+
+    output: BaseModel
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
 
 
 @runtime_checkable
@@ -68,6 +83,15 @@ class Feature(ABC):
     @abstractmethod
     def run(self, payload: BaseModel) -> BaseModel:
         """Produce a validated structured output for a single input."""
+
+    def run_with_usage(self, payload: BaseModel) -> FeatureRunResult:
+        """Run and report token usage.
+
+        The default implementation wraps :meth:`run` with zero usage; features
+        backed by an LLM should override this to report real token counts. This
+        is additive — existing callers of :meth:`run` are unaffected.
+        """
+        return FeatureRunResult(output=self.run(payload))
 
     @abstractmethod
     def scorers(self) -> list[Scorer]:

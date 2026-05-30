@@ -30,6 +30,24 @@ class _RunIdFilter(logging.Filter):
         return True
 
 
+class _StderrHandler(logging.StreamHandler):
+    """A StreamHandler that always writes to the *current* ``sys.stderr``.
+
+    Binding to ``sys.stderr`` at construction time is fragile when the stream is
+    later replaced or closed (e.g. by test capture); resolving it lazily avoids
+    "I/O operation on closed file" errors.
+    """
+
+    @property
+    def stream(self):  # type: ignore[override]
+        return sys.stderr
+
+    @stream.setter
+    def stream(self, value: object) -> None:
+        # Ignore assignment; the stream is always the live sys.stderr.
+        pass
+
+
 def configure_logging(level: str = "INFO", *, json_logs: bool = False) -> None:
     """Configure the root logger for the process.
 
@@ -37,7 +55,7 @@ def configure_logging(level: str = "INFO", *, json_logs: bool = False) -> None:
         level: Logging level name (e.g. ``"INFO"``, ``"DEBUG"``).
         json_logs: Emit JSON-shaped lines instead of human-readable text.
     """
-    handler = logging.StreamHandler(stream=sys.stderr)
+    handler = _StderrHandler()
     handler.setFormatter(logging.Formatter(_JSON_FORMAT if json_logs else _TEXT_FORMAT))
     handler.addFilter(_RunIdFilter())
 

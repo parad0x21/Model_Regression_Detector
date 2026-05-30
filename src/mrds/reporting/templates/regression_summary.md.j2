@@ -1,0 +1,42 @@
+# {{ ctx.title }}
+
+_Generated {{ ctx.generated_at.strftime("%Y-%m-%d %H:%M:%SZ") }}_
+
+**Severity:** {{ ctx.severity | upper }}{% if ctx.is_blocking %} — 🔴 **DEPLOYMENT BLOCKED**{% endif %}
+
+- **Baseline:** `{{ ctx.baseline_run_id }}` ({{ ctx.baseline_prompt_version }} / {{ ctx.baseline_dataset_version }})
+- **Candidate:** `{{ ctx.candidate_run_id }}` ({{ ctx.candidate_prompt_version }} / {{ ctx.candidate_dataset_version }})
+- **Counts:** {{ ctx.warning_count }} warning, {{ ctx.critical_count }} critical
+{% if ctx.prompt_changed %}- Prompt changed between runs.
+{% endif %}{% if ctx.dataset_changed %}- Dataset changed between runs.
+{% endif %}
+
+## Regressed metrics
+{% if ctx.regressed %}
+| Metric | Baseline | Candidate | Δ | Severity | Reason |
+| --- | --- | --- | --- | --- | --- |
+{% for m in ctx.regressed %}| {{ m.name }} | {{ "%.4g"|format(m.baseline_value) }} | {{ "%.4g"|format(m.candidate_value) }} | {{ "%+.4g"|format(m.delta) }} | {{ m.severity.value | upper }} | {{ m.reason }} |
+{% endfor %}
+{% else %}
+None.
+{% endif %}
+
+## Improved metrics
+{% if ctx.improved %}
+| Metric | Baseline | Candidate | Δ |
+| --- | --- | --- | --- |
+{% for m in ctx.improved %}| {{ m.name }} | {{ "%.4g"|format(m.baseline_value) }} | {{ "%.4g"|format(m.candidate_value) }} | {{ "%+.4g"|format(m.delta) }} |
+{% endfor %}
+{% else %}
+None.
+{% endif %}
+
+## Promotion
+{% if ctx.promotion %}
+**Eligible:** {{ "yes" if ctx.promotion.eligible else "no" }}{% if ctx.promotion.severity %} (severity {{ ctx.promotion.severity }}){% endif %}
+{% for reason in ctx.promotion.reasons %}
+- {{ reason }}
+{% endfor %}
+{% else %}
+Not evaluated.
+{% endif %}
