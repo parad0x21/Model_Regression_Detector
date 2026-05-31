@@ -5,6 +5,18 @@ from __future__ import annotations
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolate_dotenv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the suite hermetic by ignoring a developer's local ``.env``.
+
+    The app intentionally loads ``.env`` in production; tests, however, must be
+    deterministic regardless of whether one exists, so we disable it here only.
+    """
+    from mrds.config.settings import Settings
+
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+
+
 @pytest.fixture
 def clear_secret_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Remove secret env vars so default-value tests are hermetic.

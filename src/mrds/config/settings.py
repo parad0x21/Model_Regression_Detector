@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     model: str = "gpt-4o-mini"
     judge_enabled: bool = False
 
+    # --- Demo mode -------------------------------------------------------------
+    # When true, the dashboard seeds deterministic offline demo data into an empty
+    # database so visitors see meaningful pages without OpenAI access.
+    # Bound to MRDS_DEMO (not the prefix-derived MRDS_DEMO_MODE) to match the docs.
+    demo_mode: bool = Field(default=False, validation_alias="MRDS_DEMO")
+
     # --- Secrets (canonical env names, no MRDS_ prefix) ------------------------
     openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
     slack_webhook_url: str | None = Field(default=None, validation_alias="SLACK_WEBHOOK_URL")
