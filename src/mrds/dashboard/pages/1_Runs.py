@@ -4,28 +4,10 @@ from __future__ import annotations
 
 import streamlit as st
 
-from mrds.dashboard._shared import feature_selector, get_data
+from mrds.dashboard._shared import feature_selector, get_data, render_page_help
 
 st.title("Runs")
-st.caption("Each row is one evaluation of the feature — open one to see how it scored.")
-st.info(
-    "**What am I looking at?** A *run* is a single test of the AI feature against a fixed set "
-    "of hand-labeled examples. Pick a run to see its overall scores and every individual result."
-)
-
-with st.expander("What do these numbers mean?"):
-    st.markdown(
-        "- **Pass rate** — share of cases the feature got *completely* right. 90%+ is strong; "
-        "a sudden drop is the thing to worry about.\n"
-        "- **Passed / Failed / Errored** — fully correct · wrong on a check · crashed "
-        "(e.g. the model returned invalid output).\n"
-        "- **Scorer mean_score** — each scorer grades one aspect (`category_match` = right "
-        "category, `summary_quality` = sensible summary). 1.0 = perfect across all cases.\n"
-        "- **Segment metrics** — the same scores split by group (here, email category), so you "
-        "can see which categories are strong or weak.\n"
-        "- **Per-case results** — raw detail per example: pass/fail, **latency** (time), and "
-        "**tokens** (a proxy for cost)."
-    )
+render_page_help("runs")
 
 data = get_data()
 feature = feature_selector(data, key="runs_feature")

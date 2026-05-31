@@ -8,6 +8,7 @@ import streamlit as st
 
 from mrds.config.settings import Settings, get_settings
 from mrds.dashboard.data import DashboardData
+from mrds.dashboard.help_text import PAGE_HELP
 from mrds.db import EvaluationStore, open_database
 from mrds.demo import seed_demo
 
@@ -41,6 +42,27 @@ def get_data() -> DashboardData:
         with st.spinner("Seeding deterministic demo data (offline, one-time)…"):
             seed_demo(store)
     return DashboardData(store)
+
+
+def render_page_help(page_key: str) -> None:
+    """Render a page's guidance: a one-line caption in the main column, and a
+    persistent reference in the sidebar.
+
+    The sidebar stays fixed while the main content scrolls, so visitors can keep
+    the explanations in view without scrolling back to the top.
+    """
+    help_ = PAGE_HELP[page_key]
+    if help_.caption:
+        st.caption(help_.caption)
+
+    with st.sidebar:
+        st.divider()
+        st.markdown("### 📖 Page guide")
+        if help_.overview:
+            st.info(help_.overview)
+        for title, body in help_.sections:
+            with st.expander(title, expanded=True):
+                st.markdown(body)
 
 
 def feature_selector(data: DashboardData, *, key: str) -> str | None:

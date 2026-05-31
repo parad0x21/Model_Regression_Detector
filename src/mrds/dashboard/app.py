@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from mrds.dashboard._shared import get_data
+from mrds.dashboard._shared import get_data, render_page_help
 
 st.set_page_config(page_title="MRDS Dashboard", layout="wide")
 st.title("Model Regression Detection System")
@@ -21,22 +21,8 @@ st.info(
     "*baseline*). If quality drops too far, deployments are blocked."
 )
 
-with st.expander("What am I looking at? — the four pages"):
-    st.markdown(
-        "- **Runs** — every evaluation of the feature, with its scores. Inspect one run here.\n"
-        "- **Trends** — how scores, speed, and cost move across runs over time.\n"
-        "- **Regressions** — where a run got worse than the baseline, and how serious it is.\n"
-        "- **Baselines** — which run is the current 'known-good' bar everything compares to."
-    )
-
-with st.expander("Key terms, in plain English"):
-    st.markdown(
-        "- **Run** — one evaluation of the feature against the test set.\n"
-        "- **Pass rate** — share of test cases the feature got fully right. Higher is better.\n"
-        "- **Baseline** — the trusted 'known-good' run that new runs are measured against.\n"
-        "- **Regression** — a new run doing measurably worse than the baseline.\n"
-        "- **Severity** — WARNING (worth a look) vs CRITICAL (bad enough to block a release)."
-    )
+# Detailed reference lives in the sidebar so it stays visible while scrolling.
+render_page_help("home")
 
 data = get_data()
 features = data.features()
