@@ -7,7 +7,11 @@ name = "mrds"
 version = "0.1.0"
 description = "Model Regression Detection System — an AI evaluation platform and deployment-safety system."
 readme = "README.md"
-requires-python = ">=3.11"
+# Upper bound pins the supported interpreter range: CI, Docker, and local all run
+# 3.11, and the platform is untested past 3.13. Without the cap, Streamlit Cloud
+# defaulted to 3.14, where pydantic-settings dropped an aliased field and crashed
+# the dashboard. The cap makes `pip install` fail loudly on unsupported Pythons.
+requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "rajverma" }]
 keywords = ["llm", "evaluation", "regression", "ci", "ml-infrastructure"]
