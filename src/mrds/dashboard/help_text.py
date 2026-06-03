@@ -71,6 +71,20 @@ SEVERITY_BADGE: dict[str, str] = {
 }
 
 
+# Plain-language definitions + units for KPI tiles (shown via st.metric(help=...)).
+KPI_HELP: dict[str, str] = {
+    "features": "Number of AI features currently under test.",
+    "runs": "Total evaluation runs recorded for this feature.",
+    "latest_pass_rate": "Pass rate of the most recent run (share of cases fully correct).",
+    "runs_with_regressions": "Runs that scored measurably worse than the baseline.",
+    "health": "Verdict for the latest run: 🟢 Healthy, 🟡 Warning, or 🔴 Blocked.",
+    "pass_rate": "Share of cases the feature got fully right. Higher is better (90%+ is strong).",
+    "passed": "Cases that passed every check.",
+    "failed": "Cases that got a check wrong (but did not crash).",
+    "errored": "Cases where the feature crashed or returned invalid output.",
+}
+
+
 _RUNS_GLOSSARY = (
     "- **Pass rate** — share of cases the feature got *completely* right. "
     "90%+ is strong; a sudden drop is the thing to worry about.\n"
@@ -117,12 +131,21 @@ _COMPARE_GLOSSARY = (
     "what held steady between the two runs."
 )
 
+_DATASET_GLOSSARY = (
+    "- **Golden dataset** — a fixed set of hand-labeled examples the feature is graded "
+    "against. Every run uses the same set, so scores are comparable over time.\n"
+    "- **Expected output** — the human-labeled 'right answer' for each case.\n"
+    "- **Difficulty** — how hard the labeler judged the case (easy / medium / hard).\n"
+    "- **Notes** — the labeler's rationale, often flagging deliberate edge cases."
+)
+
 _HOME_PAGES = (
     "- **Runs** — every evaluation of the feature, with its scores. Inspect one run.\n"
     "- **Trends** — how scores, speed, and cost move across runs over time.\n"
     "- **Compare** — put any two runs side by side and see exactly what changed.\n"
     "- **Regressions** — where a run got worse than the baseline, and how serious.\n"
-    "- **Baselines** — the current 'known-good' run everything is compared to."
+    "- **Baselines** — the current 'known-good' run everything is compared to.\n"
+    "- **Dataset** — the hand-labeled golden examples the feature is tested against."
 )
 
 _HOME_TERMS = (
@@ -181,5 +204,14 @@ PAGE_HELP: dict[str, PageHelp] = {
             "one baseline is active per feature, and every new run is measured against it."
         ),
         sections=(("Why comparisons use a baseline", _BASELINES_GLOSSARY),),
+    ),
+    "dataset": PageHelp(
+        caption="The hand-labeled golden examples this feature is tested against.",
+        overview=(
+            "**What am I looking at?** The golden dataset — the fixed, human-labeled cases "
+            "every run is scored on. Browse them to see exactly what the feature is expected "
+            "to get right, including deliberate edge cases."
+        ),
+        sections=(("What's in the dataset", _DATASET_GLOSSARY),),
     ),
 }

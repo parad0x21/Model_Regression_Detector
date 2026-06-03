@@ -9,7 +9,7 @@ from __future__ import annotations
 import streamlit as st
 
 from mrds.dashboard._shared import get_data, render_page_help
-from mrds.dashboard.help_text import FEATURE_INFO, HEALTH_BADGE, HEALTH_CAPTION
+from mrds.dashboard.help_text import FEATURE_INFO, HEALTH_BADGE, HEALTH_CAPTION, KPI_HELP
 
 st.set_page_config(page_title="MRDS Dashboard", layout="wide")
 st.title("Model Regression Detection System")
@@ -31,7 +31,7 @@ features = data.features()
 if not features:
     st.info("No runs recorded yet. Use the CLI: `mrds evaluate --feature <name>`.")
 else:
-    st.metric("Features under test", len(features))
+    st.metric("Features under test", len(features), help=KPI_HELP["features"])
     for feature in features:
         overview = data.feature_overview(feature)
         info = FEATURE_INFO.get(feature)
@@ -44,13 +44,18 @@ else:
                 st.markdown(f"- {bullet}")
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Runs", overview.run_count)
+        col1.metric("Runs", overview.run_count, help=KPI_HELP["runs"])
         col2.metric(
             "Latest pass rate",
             f"{overview.latest_pass_rate:.1%}" if overview.latest_pass_rate is not None else "—",
+            help=KPI_HELP["latest_pass_rate"],
         )
-        col3.metric("Runs with regressions", overview.runs_with_regressions)
-        col4.metric("Health", HEALTH_BADGE[overview.health])
+        col3.metric(
+            "Runs with regressions",
+            overview.runs_with_regressions,
+            help=KPI_HELP["runs_with_regressions"],
+        )
+        col4.metric("Health", HEALTH_BADGE[overview.health], help=KPI_HELP["health"])
 
         caption = HEALTH_CAPTION[overview.health]
         if overview.latest_run_label:

@@ -5,7 +5,8 @@ from __future__ import annotations
 import streamlit as st
 
 from mrds.dashboard._shared import feature_selector, get_data, render_case, render_page_help
-from mrds.dashboard.data import filter_cases
+from mrds.dashboard.data import filter_cases, perfect_run_recommendations
+from mrds.dashboard.help_text import KPI_HELP
 
 st.title("Runs")
 render_page_help("runs")
@@ -43,11 +44,22 @@ if feature:
         result = data.run_detail(selected)
         if result is not None:
             metrics = result.aggregate_metrics
+            baseline_pr = data.baseline_pass_rate(feature)
+            pass_rate_delta = (
+                f"{metrics.pass_rate - baseline_pr:+.1%} vs baseline"
+                if baseline_pr is not None
+                else None
+            )
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Pass rate", f"{metrics.pass_rate:.1%}")
-            col2.metric("Passed", metrics.passed)
-            col3.metric("Failed", metrics.failed)
-            col4.metric("Errored", metrics.errored)
+            col1.metric(
+                "Pass rate",
+                f"{metrics.pass_rate:.1%}",
+                delta=pass_rate_delta,
+                help=KPI_HELP["pass_rate"],
+            )
+            col2.metric("Passed", metrics.passed, help=KPI_HELP["passed"])
+            col3.metric("Failed", metrics.failed, help=KPI_HELP["failed"])
+            col4.metric("Errored", metrics.errored, help=KPI_HELP["errored"])
             st.caption(
                 f"prompt {result.prompt_version} · dataset {result.dataset_version} "
                 f"· model {result.model} · {result.duration_seconds:.2f}s"
@@ -70,6 +82,43 @@ if feature:
                         for s in metrics.segments.values()
                     ],
                     use_container_width=True,
+                )
+                weakest = min(metrics.segments.values(), key=lambda s: s.pass_rate)
+                st.caption(
+                    f"Weakest {metrics.segment_field}: **{weakest.segment}** "
+                    f"({weakest.pass_rate:.0%} pass). Filter the explorer below by "
+                    f"{metrics.segment_field} = {weakest.segment} to see its cases."
+                )
+
+            st.markdown("**How to reach a perfect run**")
+            rec = perfect_run_recommendations(
+                result.per_case_results,
+                segment_field=metrics.segment_field,
+                baseline_pass_rate=baseline_pr,
+            )
+            if rec.is_perfect:
+                st.success("This run already passes every case. 🎉")
+            else:
+                st.write(
+                    f"**{rec.failing_cases} of {rec.total_cases} cases** are not passing. "
+                    f"Getting them right would raise the pass rate from "
+                    f"{rec.current_pass_rate:.0%} toward 100%."
+                )
+                if rec.gap_to_baseline:
+                    st.write(
+                        f"That includes closing a **{rec.gap_to_baseline:.0%}** gap below the "
+                        "current baseline."
+                    )
+                if rec.by_category:
+                    st.caption("Where to focus first (most failures first):")
+                    for gap in rec.by_category:
+                        st.markdown(
+                            f"- **{gap.category}** — {gap.failing} failing case(s) "
+                            f"(up to +{gap.recoverable_points:.0%} pass rate)"
+                        )
+                st.caption(
+                    "Open these in the test-log explorer below to see the expected vs. "
+                    "actual output for each."
                 )
 
             st.markdown("**Per-case results**")

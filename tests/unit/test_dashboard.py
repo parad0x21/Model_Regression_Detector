@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -16,6 +17,9 @@ from mrds.dashboard.data import (
     explain_case,
     filter_cases,
     humanize_metric_name,
+    load_dataset_view,
+    parse_dataset,
+    perfect_run_recommendations,
 )
 from mrds.datasets.models import Difficulty
 from mrds.db import EvaluationStore, open_database
@@ -448,6 +452,93 @@ def test_cases_for_metric_aggregate_has_no_cases() -> None:
     assert cases_for_metric("tokens.total_tokens", _RCA_CASES) == []
 
 
+# -- perfect run recommendations ------------------------------------------------
+
+
+def test_perfect_run_recommendations_summarises_the_gap() -> None:
+    # _RCA_CASES: 1 passing + 3 failing (technical, account, billing-errored) of 4.
+    rec = perfect_run_recommendations(_RCA_CASES, segment_field="category", baseline_pass_rate=0.95)
+    assert not rec.is_perfect
+    assert rec.total_cases == 4
+    assert rec.failing_cases == 3
+    assert rec.current_pass_rate == pytest.approx(0.25)
+    assert rec.points_to_recover == pytest.approx(0.75)
+    assert rec.gap_to_baseline == pytest.approx(0.70)
+    # One failing case in each of three categories, sorted by name on the count tie.
+    assert [(g.category, g.failing) for g in rec.by_category] == [
+        ("account", 1),
+        ("billing", 1),
+        ("technical", 1),
+    ]
+    assert rec.by_category[0].recoverable_points == pytest.approx(0.25)
+
+
+def test_perfect_run_recommendations_all_passing() -> None:
+    passing = [_scored_case("p1", passed=True, category="billing", scorer_passed=True)]
+    rec = perfect_run_recommendations(passing, segment_field="category")
+    assert rec.is_perfect
+    assert rec.failing_cases == 0
+    assert rec.points_to_recover == pytest.approx(0.0)
+    assert rec.gap_to_baseline is None
+    assert rec.by_category == ()
+
+
+# -- dataset explorer -----------------------------------------------------------
+
+
+_SAMPLE_DATASET = {
+    "version": "v1",
+    "description": "A tiny golden set.",
+    "cases": [
+        {
+            "id": "ec-001",
+            "input": {"email_text": "refund my duplicate charge"},
+            "expected_output": {"category": "billing", "summary": "refund"},
+            "expected_difficulty": "easy",
+            "notes": "clear billing case",
+        },
+        {
+            "id": "ec-002",
+            "input": {"email_text": "app keeps crashing"},
+            "expected_output": {"category": "technical", "summary": "crash"},
+            "expected_difficulty": "hard",
+            "notes": "",
+        },
+    ],
+}
+
+
+def test_parse_dataset_keeps_notes_and_input_text() -> None:
+    view = parse_dataset(_SAMPLE_DATASET, feature="email_classifier")
+    assert view.version == "v1"
+    assert view.description == "A tiny golden set."
+    assert view.case_count == 2
+    first = view.cases[0]
+    assert first.case_id == "ec-001"
+    assert first.input_text == "refund my duplicate charge"
+    assert first.expected["category"] == "billing"
+    assert first.difficulty == "easy"
+    assert first.notes == "clear billing case"
+
+
+def test_load_dataset_view_picks_latest_version(tmp_path) -> None:
+    feature_dir = tmp_path / "email_classifier"
+    feature_dir.mkdir()
+    (feature_dir / "v1.json").write_text(
+        json.dumps({"version": "v1", "description": "old", "cases": []}), encoding="utf-8"
+    )
+    (feature_dir / "v2.json").write_text(
+        json.dumps({"version": "v2", "description": "new", "cases": []}), encoding="utf-8"
+    )
+    view = load_dataset_view("email_classifier", datasets_dir=tmp_path)
+    assert view is not None
+    assert view.version == "v2"  # highest version wins
+
+
+def test_load_dataset_view_missing_returns_none(tmp_path) -> None:
+    assert load_dataset_view("nope", datasets_dir=tmp_path) is None
+
+
 # -- metric name humanizing -----------------------------------------------------
 
 
@@ -511,6 +602,13 @@ def test_active_baseline_and_history(data: DashboardData) -> None:
 
 def test_no_baseline_for_other_feature(data: DashboardData) -> None:
     assert data.active_baseline("rag_qa") is None
+
+
+def test_baseline_pass_rate(data: DashboardData) -> None:
+    # run-1 (pass 0.95) is the promoted baseline for email_classifier.
+    assert data.baseline_pass_rate("email_classifier") == pytest.approx(0.95)
+    # rag_qa has no baseline.
+    assert data.baseline_pass_rate("rag_qa") is None
 
 
 # -- repository integration -----------------------------------------------------

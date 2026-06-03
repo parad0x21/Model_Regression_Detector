@@ -8,10 +8,13 @@ metrics snapshot into chartable :class:`TrendPoint`s. Nothing here writes.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
+from mrds.datasets.loader import DEFAULT_DATASETS_DIR
 from mrds.db import EvaluationStore
 from mrds.db.records import BaselineRecord, RegressionRecord, RunRecord
 from mrds.evaluation.models import AggregateMetrics, CaseResult, EvaluationResult
@@ -280,6 +283,164 @@ def cases_for_metric(
     return []
 
 
+@dataclass(frozen=True)
+class DatasetCaseView:
+    """One golden-dataset case, for the dataset explorer (feature-agnostic)."""
+
+    case_id: str
+    input: dict[str, object]
+    input_text: str
+    expected: dict[str, object]
+    difficulty: str
+    notes: str
+
+
+@dataclass(frozen=True)
+class DatasetView:
+    """A versioned golden dataset's description plus its labeled cases."""
+
+    feature: str
+    version: str
+    description: str
+    case_count: int
+    cases: tuple[DatasetCaseView, ...]
+
+
+def parse_dataset(raw: dict[str, object], *, feature: str) -> DatasetView:
+    """Parse a raw dataset JSON dict into a :class:`DatasetView` (pure; no I/O).
+
+    Feature-agnostic: ``input``/``expected_output`` are kept as plain dicts, so the
+    dashboard never imports a feature's models. Includes the human ``notes``.
+    """
+    raw_cases = raw.get("cases", [])
+    cases = tuple(
+        DatasetCaseView(
+            case_id=str(case.get("id", "")),
+            input=dict(case.get("input", {})),
+            input_text=_primary_input_text(dict(case.get("input", {}))),
+            expected=dict(case.get("expected_output", {})),
+            difficulty=str(case.get("expected_difficulty", "")),
+            notes=str(case.get("notes", "")),
+        )
+        for case in raw_cases
+        if isinstance(case, dict)
+    )
+    return DatasetView(
+        feature=feature,
+        version=str(raw.get("version", "")),
+        description=str(raw.get("description", "")),
+        case_count=len(cases),
+        cases=cases,
+    )
+
+
+def _dataset_version_number(stem: str) -> int:
+    """Numeric component of a ``vN`` filename stem, or -1 if it doesn't match."""
+    return int(stem[1:]) if stem.startswith("v") and stem[1:].isdigit() else -1
+
+
+def _latest_dataset_file(feature: str, datasets_dir: Path) -> Path | None:
+    """The highest-version ``vN.json`` file for a feature, if any."""
+    feature_dir = Path(datasets_dir) / feature
+    if not feature_dir.is_dir():
+        return None
+    files = sorted(feature_dir.glob("*.json"), key=lambda p: _dataset_version_number(p.stem))
+    return files[-1] if files else None
+
+
+def load_dataset_view(
+    feature: str, *, datasets_dir: Path = DEFAULT_DATASETS_DIR
+) -> DatasetView | None:
+    """Load the latest golden dataset for a feature from disk, or ``None`` if absent.
+
+    Reads the versioned JSON directly (outside the SQLite path) so the richest data —
+    the dataset ``description`` and per-case ``notes`` — is available to the explorer.
+    """
+    path = _latest_dataset_file(feature, datasets_dir)
+    if path is None:
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return parse_dataset(raw, feature=feature)
+
+
+@dataclass(frozen=True)
+class CategoryGap:
+    """How many cases in one category are failing, and the pass-rate points at stake."""
+
+    category: str
+    failing: int
+    recoverable_points: float  # failing / total — pass-rate points if these all passed
+
+
+@dataclass(frozen=True)
+class RunRecommendations:
+    """A structured 'what would make this run perfect' summary (pure; numbers only).
+
+    Prose framing lives in the page; this carries only computed facts so it is
+    trivially testable and never over-claims.
+    """
+
+    is_perfect: bool
+    total_cases: int
+    failing_cases: int
+    current_pass_rate: float
+    points_to_recover: float  # 1.0 - current_pass_rate
+    gap_to_baseline: float | None  # baseline - current, only if currently below baseline
+    by_category: tuple[CategoryGap, ...]
+
+
+def perfect_run_recommendations(
+    cases: Sequence[CaseResult],
+    *,
+    segment_field: str | None = None,
+    baseline_pass_rate: float | None = None,
+) -> RunRecommendations:
+    """Summarise the gap between a run and a perfect (all-passing) run.
+
+    A case counts as failing if it did not pass (includes errored). ``recoverable_points``
+    is the exact pass-rate gain if a category's failing cases all passed; the page words
+    this as an upper bound ("up to") to avoid implying other checks can't still fail.
+    """
+    total = len(cases)
+    failing = [c for c in cases if not c.passed]
+    current = (total - len(failing)) / total if total else 0.0
+
+    by_category: tuple[CategoryGap, ...] = ()
+    if segment_field and failing:
+        counts: dict[str, int] = {}
+        for case in failing:
+            category = case_category(case, segment_field) or "unknown"
+            counts[category] = counts.get(category, 0) + 1
+        by_category = tuple(
+            CategoryGap(
+                category=category,
+                failing=count,
+                recoverable_points=count / total if total else 0.0,
+            )
+            # Most failures first; ties broken by name for determinism.
+            for category, count in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        )
+
+    gap_to_baseline = (
+        baseline_pass_rate - current
+        if baseline_pass_rate is not None and current < baseline_pass_rate
+        else None
+    )
+
+    return RunRecommendations(
+        is_perfect=not failing,
+        total_cases=total,
+        failing_cases=len(failing),
+        current_pass_rate=current,
+        points_to_recover=max(0.0, 1.0 - current),
+        gap_to_baseline=gap_to_baseline,
+        by_category=by_category,
+    )
+
+
 def explain_case(case: CaseResult) -> CaseExplanation:
     """Derive a plain-English explanation of a single case's outcome (pure).
 
@@ -362,6 +523,32 @@ class DashboardData:
     def run_label_map(self, feature: str, *, limit: int = 100) -> dict[str, RunLabel]:
         """``run_uuid -> RunLabel`` for a feature's runs (for lookup by uuid)."""
         return {label.run_uuid: label for label in self.run_labels(feature, limit=limit)}
+
+    def dataset_view(
+        self, feature: str, *, datasets_dir: Path = DEFAULT_DATASETS_DIR
+    ) -> DatasetView | None:
+        """The latest golden dataset for a feature (read from disk), or ``None``."""
+        return load_dataset_view(feature, datasets_dir=datasets_dir)
+
+    def segment_field_for(self, feature: str) -> str | None:
+        """The segment field (e.g. ``category``) used by the feature's latest run."""
+        runs = self.runs(feature, limit=1)
+        if not runs:
+            return None
+        return AggregateMetrics.model_validate_json(runs[0].metrics_json).segment_field
+
+    def baseline_pass_rate(self, feature: str) -> float | None:
+        """The active baseline's pass rate, for a 'vs baseline' verdict, or ``None``.
+
+        Reads the baseline run's stored metrics snapshot (no full reconstruction).
+        """
+        baseline = self.active_baseline(feature)
+        if baseline is None:
+            return None
+        run = self._store.runs.get_by_id(baseline.run_id)
+        if run is None:
+            return None
+        return AggregateMetrics.model_validate_json(run.metrics_json).pass_rate
 
     def feature_overview(self, feature: str, *, limit: int = 100) -> FeatureOverview:
         """Headline status for a feature: run count, latest pass rate, and health.

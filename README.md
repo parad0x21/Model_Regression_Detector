@@ -153,13 +153,15 @@ mrds promote-baseline --run <run-id> --promoted-by you --note "v2 prompt looks g
 
 ## 7. Dashboard Overview
 
-A **read-only** [Streamlit](https://streamlit.io) app that reads straight from the SQLite system of record — it never writes during normal operation. A home overview plus four pages:
+A **read-only** [Streamlit](https://streamlit.io) app that reads straight from the SQLite system of record — it never writes during normal operation. A home overview plus six pages:
 
 - **Home** — a business-framed overview of each feature under test (what it does, what its categories mean) and a live **health verdict** (🟢 Healthy / 🟡 Warning / 🔴 Blocked) for its latest run, with headline stats.
-- **Runs** — every evaluation run with its prompt/dataset/model, pass rate, latency, tokens, and status. Each failing case is **explained**: the model's actual output vs. what was expected, and the per-check reason it failed (passing cases are inspectable on demand).
+- **Runs** — every evaluation run with its prompt/dataset/model, pass rate, latency, tokens, and status, plus a **test-log explorer**: filter/search every case and expand it to see the model's actual output vs. what was expected and the per-check reason it passed or failed.
 - **Trends** — metric history over time per feature, to see quality drift at a glance.
-- **Regressions** — detected regressions with severity, the offending metrics, and the baseline they were measured against.
+- **Compare** — put any two runs side by side and see exactly what changed: headline deltas, per-metric Δ%, the plain-English reason for each move, and whether the prompt or dataset changed between them.
+- **Regressions** — detected regressions with severity and the baseline they were measured against, each explained in words and **drillable to the exact failing cases** behind it, with a clear "would this block the deploy?" verdict.
 - **Baselines** — the currently promoted baseline per feature, plus promotion history (who, when, why).
+- **Dataset** — browse the hand-labeled golden dataset the feature is tested against, with category/difficulty distributions, human notes, and filter/search.
 
 Runs are shown with **human-readable names** (e.g. *Email Classifier #12 · gpt-4o-mini · Dataset v1 · Jun 2, 2026*) throughout tables, pickers, and charts, while the internal run id is preserved for traceability.
 
@@ -241,7 +243,7 @@ src/mrds/
   config/         layered Pydantic settings
   observability/  structured logging
   demo/           deterministic offline demo seeding
-  dashboard/      Streamlit app + pages (Runs, Trends, Regressions, Baselines)
+  dashboard/      Streamlit app + pages (Runs, Trends, Compare, Regressions, Baselines, Dataset)
 
 prompts/          versioned prompt YAML        →  prompts/email_classifier/v1.yaml
 datasets/         versioned golden JSON        →  datasets/email_classifier/v1.json
