@@ -17,7 +17,13 @@ if feature:
     if not run_ids:
         st.info("No runs recorded for this feature.")
     else:
-        selected = st.selectbox("Run (candidate)", run_ids, key="regressions_run")
+        labels = data.run_label_map(feature)
+        selected = st.selectbox(
+            "Run (candidate)",
+            run_ids,
+            format_func=lambda uuid: labels[uuid].label if uuid in labels else uuid,
+            key="regressions_run",
+        )
         regressions = data.regressions_for_run(selected)
         if not regressions:
             st.success("No regressions recorded for this run.")

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from mrds.dashboard._shared import feature_selector, get_data, render_page_help
+from mrds.dashboard._shared import feature_selector, get_data, render_case, render_page_help
 
 st.title("Runs")
 render_page_help("runs")
@@ -14,15 +14,17 @@ feature = feature_selector(data, key="runs_feature")
 
 if feature:
     runs = data.runs(feature)
+    labels = {label.run_uuid: label for label in data.run_labels(feature)}
     st.subheader(f"{len(runs)} run(s)")
     st.dataframe(
         [
             {
-                "run_id": r.run_uuid,
+                "run": labels[r.run_uuid].label if r.run_uuid in labels else r.run_uuid,
                 "status": r.status,
                 "triggered_by": r.triggered_by,
                 "started_at": r.started_at,
                 "tokens": r.total_tokens,
+                "run_id": r.run_uuid,
             }
             for r in runs
         ],
@@ -31,7 +33,12 @@ if feature:
 
     run_ids = [r.run_uuid for r in runs]
     if run_ids:
-        selected = st.selectbox("Inspect run", run_ids, key="runs_drilldown")
+        selected = st.selectbox(
+            "Inspect run",
+            run_ids,
+            format_func=lambda uuid: labels[uuid].label if uuid in labels else uuid,
+            key="runs_drilldown",
+        )
         result = data.run_detail(selected)
         if result is not None:
             metrics = result.aggregate_metrics
@@ -79,3 +86,15 @@ if feature:
                 ],
                 use_container_width=True,
             )
+
+            st.markdown("**Failures — why they didn't pass**")
+            failures = [c for c in result.per_case_results if not c.passed]
+            if not failures:
+                st.success("Every case passed. 🎉")
+            else:
+                st.caption(
+                    f"{len(failures)} of {len(result.per_case_results)} cases failed or errored. "
+                    "Open one to see the model's actual output vs. what was expected."
+                )
+                for case in failures:
+                    render_case(case, expanded=len(failures) <= 3)

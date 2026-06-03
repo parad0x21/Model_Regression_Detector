@@ -7,10 +7,11 @@ import os
 import streamlit as st
 
 from mrds.config.settings import Settings, get_settings
-from mrds.dashboard.data import DashboardData
+from mrds.dashboard.data import DashboardData, explain_case
 from mrds.dashboard.help_text import PAGE_HELP
 from mrds.db import EvaluationStore, open_database
 from mrds.demo import seed_demo
+from mrds.evaluation.models import CaseResult
 
 # Values accepted as a truthy MRDS_DEMO flag when read straight from the env.
 _TRUTHY_DEMO = {"1", "true", "yes", "on"}
@@ -72,3 +73,40 @@ def feature_selector(data: DashboardData, *, key: str) -> str | None:
         st.info("No evaluation runs recorded yet. Run `mrds evaluate --feature <name>` first.")
         return None
     return st.selectbox("Feature", features, key=key)
+
+
+def render_case(case: CaseResult, *, expanded: bool = False) -> None:
+    """Render one case's explanation: input, expected vs actual, and per-scorer reasons.
+
+    The reusable per-case detail component. Surfaces data that is stored but otherwise
+    hidden, so a viewer can see *why* a case passed, failed, or errored.
+    """
+    explanation = explain_case(case)
+    icon = "🟥" if explanation.errored else ("✅" if explanation.passed else "❌")
+    with st.expander(f"{icon} {explanation.case_id} · {explanation.difficulty}", expanded=expanded):
+        st.caption(explanation.summary)
+
+        if explanation.errored:
+            st.error(explanation.error or "Errored with no message.")
+
+        st.markdown("**Input**")
+        st.write(explanation.input_text or explanation.input)
+
+        expected_col, actual_col = st.columns(2)
+        expected_col.markdown("**Expected**")
+        expected_col.json(explanation.expected)
+        actual_col.markdown("**Actual** (model output)")
+        if explanation.actual is None:
+            actual_col.write("— no output (case errored) —")
+        else:
+            actual_col.json(explanation.actual)
+
+        if explanation.scorers:
+            st.markdown("**Checks**")
+            st.dataframe(
+                [
+                    {"check": s.name, "passed": s.passed, "score": s.score, "why": s.detail}
+                    for s in explanation.scorers
+                ],
+                use_container_width=True,
+            )

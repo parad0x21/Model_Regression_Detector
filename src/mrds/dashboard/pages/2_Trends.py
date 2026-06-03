@@ -18,10 +18,13 @@ if feature:
     if not points:
         st.info("No runs to chart yet.")
     else:
+        labels = data.run_label_map(feature)
         frame = pd.DataFrame(
             [
                 {
-                    "run": p.run_uuid[:8],
+                    "run": labels[p.run_uuid].short_label
+                    if p.run_uuid in labels
+                    else p.run_uuid[:8],
                     "pass_rate": p.pass_rate,
                     "mean_latency_ms": p.mean_latency_ms,
                     "p95_latency_ms": p.p95_latency_ms,

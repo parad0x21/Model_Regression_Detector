@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import pytest
 
 from mrds.core.interfaces import ScoreResult
-from mrds.dashboard.data import DashboardData, TrendPoint
+from mrds.dashboard.data import DashboardData, TrendPoint, build_run_label, explain_case
 from mrds.datasets.models import Difficulty
 from mrds.db import EvaluationStore, open_database
 from mrds.evaluation.models import (
@@ -118,6 +118,116 @@ def test_run_detail_reconstructs(data: DashboardData) -> None:
 
 def test_run_detail_unknown_returns_none(data: DashboardData) -> None:
     assert data.run_detail("missing") is None
+
+
+# -- run labels -----------------------------------------------------------------
+
+
+def test_build_run_label_full_and_short() -> None:
+    label = build_run_label(
+        run_uuid="abc123",
+        feature="email_classifier",
+        sequence=12,
+        model="gpt-4o-mini",
+        dataset_version="v1",
+        started_at="2026-06-02T09:30:00+00:00",
+    )
+    assert label.run_uuid == "abc123"  # internal id is preserved untouched
+    assert label.sequence == 12
+    assert label.label == "Email Classifier #12 · gpt-4o-mini · Dataset v1 · Jun 2, 2026"
+    assert label.short_label == "#12 · Jun 2"
+
+
+def test_build_run_label_degrades_gracefully() -> None:
+    label = build_run_label(
+        run_uuid="x",
+        feature="rag_qa",
+        sequence=1,
+        model="",
+        dataset_version="",
+        started_at="not-a-date",
+    )
+    # Missing model / dataset / unparseable date are omitted, not rendered as blanks.
+    assert label.label == "Rag Qa #1"
+    assert label.short_label == "#1"
+
+
+def test_run_labels_number_oldest_first_and_preserve_uuid(data: DashboardData) -> None:
+    labels = data.run_labels("email_classifier")
+    # runs() is most-recent-first: run-2 then run-1; the oldest run is #1.
+    assert [label.run_uuid for label in labels] == ["run-2", "run-1"]
+    by_uuid = {label.run_uuid: label for label in labels}
+    assert by_uuid["run-1"].sequence == 1
+    assert by_uuid["run-2"].sequence == 2
+    assert by_uuid["run-2"].label.startswith("Email Classifier #2 · gpt-4o-mini · Dataset v1 · ")
+
+
+def test_run_label_map_keys_by_uuid(data: DashboardData) -> None:
+    mapping = data.run_label_map("email_classifier")
+    assert set(mapping) == {"run-1", "run-2"}
+    assert mapping["run-1"].run_uuid == "run-1"
+
+
+# -- case explanations ----------------------------------------------------------
+
+
+def _case(*, passed: bool, scores: list[ScoreResult], actual, error=None) -> CaseResult:
+    return CaseResult(
+        case_id="ec-007",
+        expected_difficulty=Difficulty.MEDIUM,
+        input={"email_text": "My card was declined, how do I update payment?"},
+        expected_output={"category": "billing", "summary": "payment update"},
+        actual_output=actual,
+        scores=scores,
+        passed=passed,
+        latency_ms=10.0,
+        error=error,
+    )
+
+
+def test_explain_case_failure_surfaces_actual_vs_expected_and_reason() -> None:
+    case = _case(
+        passed=False,
+        actual={"category": "technical", "summary": "payment update"},
+        scores=[
+            ScoreResult(
+                name="category_match",
+                score=0.0,
+                passed=False,
+                detail="expected 'billing', got 'technical'",
+            ),
+            ScoreResult(name="summary_quality", score=1.0, passed=True, detail="words=2"),
+        ],
+    )
+    exp = explain_case(case)
+    assert not exp.passed and not exp.errored
+    assert exp.input_text == "My card was declined, how do I update payment?"
+    assert exp.expected["category"] == "billing"
+    assert exp.actual is not None and exp.actual["category"] == "technical"
+    assert exp.failed_scorers == ("category_match",)
+    assert "expected 'billing', got 'technical'" in exp.summary
+
+
+def test_explain_case_pass() -> None:
+    case = _case(
+        passed=True,
+        actual={"category": "billing", "summary": "payment update"},
+        scores=[
+            ScoreResult(name="category_match", score=1.0, passed=True, detail="category matched")
+        ],
+    )
+    exp = explain_case(case)
+    assert exp.passed and not exp.errored
+    assert exp.failed_scorers == ()
+    assert exp.summary == "All checks passed."
+
+
+def test_explain_case_errored() -> None:
+    case = _case(passed=False, actual=None, scores=[], error="invalid model output")
+    exp = explain_case(case)
+    assert exp.errored
+    assert exp.actual is None
+    assert exp.summary == "Errored — invalid model output"
 
 
 # -- trends ---------------------------------------------------------------------
