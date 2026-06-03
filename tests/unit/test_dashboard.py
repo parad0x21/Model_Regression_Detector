@@ -12,6 +12,7 @@ from mrds.dashboard.data import (
     TrendPoint,
     build_run_label,
     case_outcome,
+    cases_for_metric,
     explain_case,
     filter_cases,
     humanize_metric_name,
@@ -372,6 +373,79 @@ def test_filter_cases_none_means_no_constraint() -> None:
     assert len(filter_cases(_EXPLORER_CASES)) == 3
     # Category filter is ignored when no segment_field is supplied.
     assert len(filter_cases(_EXPLORER_CASES, categories=["billing"], segment_field=None)) == 3
+
+
+# -- root cause attribution -----------------------------------------------------
+
+
+def _scored_case(
+    case_id: str,
+    *,
+    passed: bool,
+    category: str,
+    scorer_passed: bool | None,
+    error: str | None = None,
+) -> CaseResult:
+    scores = (
+        []
+        if scorer_passed is None
+        else [
+            ScoreResult(
+                name="category_match",
+                score=1.0 if scorer_passed else 0.0,
+                passed=scorer_passed,
+            )
+        ]
+    )
+    return CaseResult(
+        case_id=case_id,
+        expected_difficulty=Difficulty.EASY,
+        input={"email_text": "x"},
+        expected_output={"category": category, "summary": "s"},
+        actual_output=None if error else {"category": category, "summary": "s"},
+        scores=scores,
+        passed=passed,
+        latency_ms=1.0,
+        error=error,
+    )
+
+
+_RCA_CASES = [
+    _scored_case("p", passed=True, category="billing", scorer_passed=True),
+    _scored_case("f", passed=False, category="technical", scorer_passed=False),
+    _scored_case("f2", passed=False, category="account", scorer_passed=False),
+    _scored_case("e", passed=False, category="billing", scorer_passed=None, error="boom"),
+]
+
+
+def test_cases_for_metric_pass_rate_includes_errored() -> None:
+    ids = [c.case_id for c in cases_for_metric("pass_rate", _RCA_CASES)]
+    assert ids == ["f", "f2", "e"]
+
+
+def test_cases_for_metric_errored() -> None:
+    assert [c.case_id for c in cases_for_metric("errored", _RCA_CASES)] == ["e"]
+
+
+def test_cases_for_metric_scorer_excludes_errored() -> None:
+    # Errored case "e" has no category_match score, so it does not drag the scorer mean.
+    ids = [c.case_id for c in cases_for_metric("scorer.category_match.mean_score", _RCA_CASES)]
+    assert ids == ["f", "f2"]
+
+
+def test_cases_for_metric_segment_scoped() -> None:
+    ids = [
+        c.case_id
+        for c in cases_for_metric(
+            "segment.account.category_match", _RCA_CASES, segment_field="category"
+        )
+    ]
+    assert ids == ["f2"]
+
+
+def test_cases_for_metric_aggregate_has_no_cases() -> None:
+    assert cases_for_metric("latency.mean_ms", _RCA_CASES) == []
+    assert cases_for_metric("tokens.total_tokens", _RCA_CASES) == []
 
 
 # -- metric name humanizing -----------------------------------------------------

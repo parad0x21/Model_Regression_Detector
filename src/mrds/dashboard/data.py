@@ -237,6 +237,49 @@ def filter_cases(
     return selected
 
 
+def _scorer_did_not_pass(case: CaseResult, scorer_name: str) -> bool:
+    """True if the case has a score for ``scorer_name`` that did not pass.
+
+    Errored cases (no scores) return False: the aggregator excludes them from a
+    scorer's mean/pass-rate, so they don't drag a scorer metric (they drag pass_rate).
+    """
+    return any(s.name == scorer_name and not s.passed for s in case.scores)
+
+
+def cases_for_metric(
+    metric_name: str,
+    cases: Sequence[CaseResult],
+    *,
+    segment_field: str | None = None,
+) -> list[CaseResult]:
+    """The cases responsible for a regressed metric (pure; root-cause attribution).
+
+    Mirrors how the aggregator builds each metric, so the returned cases are exactly
+    those that dragged it down:
+
+    - ``pass_rate`` -> every case that did not pass (includes errored).
+    - ``errored`` -> every errored case.
+    - ``scorer.<name>.*`` -> cases where that scorer did not pass.
+    - ``segment.<seg>.<scorer>`` -> cases in that segment where the scorer did not pass.
+    - ``latency.*`` / ``tokens.*`` -> none (aggregate, not attributable to failures).
+    """
+    if metric_name == "pass_rate":
+        return [c for c in cases if not c.passed]
+    if metric_name == "errored":
+        return [c for c in cases if c.error is not None]
+    if metric_name.startswith("scorer."):
+        _, scorer, _stat = metric_name.split(".", 2)
+        return [c for c in cases if _scorer_did_not_pass(c, scorer)]
+    if metric_name.startswith("segment."):
+        _, segment, scorer = metric_name.split(".", 2)
+        return [
+            c
+            for c in cases
+            if case_category(c, segment_field) == segment and _scorer_did_not_pass(c, scorer)
+        ]
+    return []
+
+
 def explain_case(case: CaseResult) -> CaseExplanation:
     """Derive a plain-English explanation of a single case's outcome (pure).
 
