@@ -1,0 +1,106 @@
+{
+  "version": "v1",
+  "created_at": "2026-06-10",
+  "description": "Golden dataset for featuretest1.",
+  "cases": [
+    {
+      "id": "faq-001",
+      "input": {
+        "question": "How do I reset my password?"
+      },
+      "expected_output": {
+        "intent": "account"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-002",
+      "input": {
+        "question": "Why was I charged twice this month?"
+      },
+      "expected_output": {
+        "intent": "billing"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-003",
+      "input": {
+        "question": "The app crashes when I click upload."
+      },
+      "expected_output": {
+        "intent": "technical"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-004",
+      "input": {
+        "question": "How can I change my subscription plan?"
+      },
+      "expected_output": {
+        "intent": "billing"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-005",
+      "input": {
+        "question": "I can't log into my account."
+      },
+      "expected_output": {
+        "intent": "account"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-006",
+      "input": {
+        "question": "The website keeps showing a 500 error."
+      },
+      "expected_output": {
+        "intent": "technical"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-007",
+      "input": {
+        "question": "How do I update my email address?"
+      },
+      "expected_output": {
+        "intent": "account"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-008",
+      "input": {
+        "question": "Can I get a refund for my last payment?"
+      },
+      "expected_output": {
+        "intent": "billing"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    },
+    {
+      "id": "faq-009",
+      "input": {
+        "question": "The mobile app freezes on startup."
+      },
+      "expected_output": {
+        "intent": "technical"
+      },
+      "expected_difficulty": "medium",
+      "notes": ""
+    }
+  ]
+}

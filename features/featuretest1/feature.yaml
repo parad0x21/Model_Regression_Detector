@@ -1,0 +1,29 @@
+feature_name: featuretest1
+title: ''
+description: ''
+input_fields:
+- name: question
+  type: string
+  values: []
+  required: true
+  description: ''
+output_fields:
+- name: intent
+  type: enum
+  values:
+  - account
+  - billing
+  - technical
+  required: true
+  description: ''
+scoring:
+- field: intent
+  scorer: exact_match
+  name: null
+  params:
+    min_words: null
+    max_words: null
+    max_sentences: null
+    nonempty: true
+segment_field: intent
+prompt_feature: null
