@@ -1,0 +1,230 @@
+@import "tailwindcss";
+
+/*
+  EVAL OS — design system
+  ------------------------------------------------------------------
+  Aesthetic: "instrument-grade observatory." A warm-ink dark field, a single
+  cool instrument-cyan signal accent held in tension with warm neutrals, and a
+  strict green/amber/red verdict triad reserved ONLY for AI-health semantics.
+  Numbers live in monospace so metrics read like instrument readouts.
+*/
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+
+  --color-text: var(--text);
+  --color-bright: var(--bright);
+  --color-dim: var(--dim);
+  --color-mute: var(--mute);
+
+  --color-signal: var(--signal);
+  --color-signal-2: var(--signal-2);
+
+  --color-healthy: var(--healthy);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+
+  --font-display: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", monospace;
+
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+}
+
+:root {
+  --ink: oklch(0.155 0.005 70);
+  --ink-2: oklch(0.128 0.005 68);
+  --surface: oklch(0.188 0.006 72);
+  --surface-2: oklch(0.224 0.007 74);
+  --panel: oklch(0.203 0.006 73);
+  --line: oklch(1 0 0 / 0.08);
+  --line-2: oklch(1 0 0 / 0.15);
+
+  --text: oklch(0.92 0.006 80);
+  --bright: oklch(0.985 0.004 95);
+  --dim: oklch(0.73 0.008 80);
+  --mute: oklch(0.57 0.01 78);
+
+  --signal: oklch(0.82 0.125 202);
+  --signal-2: oklch(0.88 0.1 196);
+
+  --healthy: oklch(0.81 0.16 158);
+  --warning: oklch(0.84 0.14 80);
+  --critical: oklch(0.68 0.2 22);
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv01";
+    overflow-x: hidden;
+  }
+
+  /* Atmosphere: faint cyan + warm radial glows fixed behind everything. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(60% 50% at 78% -8%, oklch(0.82 0.125 202 / 0.1), transparent 70%),
+      radial-gradient(50% 45% at 8% 4%, oklch(0.7 0.08 50 / 0.07), transparent 70%),
+      radial-gradient(80% 60% at 50% 120%, oklch(0.5 0.04 250 / 0.08), transparent 70%);
+  }
+  /* Fine grain overlay for depth. */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    background: oklch(0.82 0.125 202 / 0.28);
+    color: var(--bright);
+  }
+
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 0.1);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 0.2);
+    background-clip: content-box;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  /* A hairline-bordered panel with subtle top-light, the core surface. */
+  .panel {
+    background: linear-gradient(180deg, oklch(1 0 0 / 0.025), transparent 40%), var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+  }
+  .panel-inset {
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+
+  /* Numeric/label affordances */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+
+  .text-gradient {
+    background: linear-gradient(180deg, var(--bright), oklch(0.78 0.01 80));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Verdict tints (background + ring) keyed by health */
+  .v-healthy {
+    color: var(--healthy);
+  }
+  .v-warning {
+    color: var(--warning);
+  }
+  .v-critical {
+    color: var(--critical);
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
+
+/* Orchestrated entrance: one staggered reveal per view. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility animate-rise {
+  opacity: 0;
+  animation: rise 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@utility animate-fade {
+  opacity: 0;
+  animation: fade 0.7s ease forwards;
+}
+@utility animate-breathe {
+  animation: breathe 2.4s ease-in-out infinite;
+}
